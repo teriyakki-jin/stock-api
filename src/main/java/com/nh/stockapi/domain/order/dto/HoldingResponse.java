@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public record HoldingResponse(
+        Long holdingId,
         String ticker,
         String stockName,
         Long quantity,
@@ -22,6 +23,7 @@ public record HoldingResponse(
                 .doubleValue();
 
         return new HoldingResponse(
+                holding.getId(),
                 holding.getStock().getTicker(),
                 holding.getStock().getName(),
                 holding.getQuantity(),

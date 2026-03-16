@@ -37,7 +37,7 @@ spring:
           min-idle: 2
 
 jwt:
-  secret: ${JWT_SECRET:eW91ci0yNTYtYml0LXNlY3JldC1rZXktbXVzdC1iZS1hdC1sZWFzdC0zMi1jaGFycw==}
+  secret: ${JWT_SECRET}                # 필수 환경변수 - .env.example 참고
   access-token-expire-ms: 1800000      # 30분
   refresh-token-expire-ms: 604800000   # 7일
 
@@ -69,6 +69,9 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+
+jwt:
+  secret: bG9jYWwtZGV2LW9ubHktc2VjcmV0LWtleS1kb250LXVzZS1pbi1wcm9kdWN0aW9u  # local 전용
 
 ---
 spring:

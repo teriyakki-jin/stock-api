@@ -27,7 +27,8 @@ public class JwtTokenProvider {
     private final CustomUserDetailsService userDetailsService;
     private final RedisTemplate<String, String> redisTemplate;
 
-    private static final String REFRESH_TOKEN_PREFIX = "RT:";
+    private static final String REFRESH_TOKEN_PREFIX  = "RT:";
+    private static final String BLACKLIST_TOKEN_PREFIX = "BL:";
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
@@ -48,7 +49,6 @@ public class JwtTokenProvider {
 
     public String createRefreshToken(String email) {
         String token = buildToken(email, refreshTokenExpireMs);
-        // Redis에 저장 (키 중복 로그인 방지)
         redisTemplate.opsForValue().set(
                 REFRESH_TOKEN_PREFIX + email,
                 token,
@@ -56,6 +56,18 @@ public class JwtTokenProvider {
                 TimeUnit.MILLISECONDS
         );
         return token;
+    }
+
+    /** Refresh Token으로 새 Access Token 발급 */
+    public String refreshAccessToken(String refreshToken) {
+        validateToken(refreshToken);
+        String email = extractEmail(refreshToken);
+
+        String stored = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + email);
+        if (!refreshToken.equals(stored)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+        return createAccessToken(email);
     }
 
     public Authentication getAuthentication(String token) {
@@ -71,7 +83,13 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
+            // 블랙리스트 확인
+            if (Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_TOKEN_PREFIX + token))) {
+                throw new CustomException(ErrorCode.INVALID_TOKEN);
+            }
             return true;
+        } catch (CustomException e) {
+            throw e;
         } catch (ExpiredJwtException e) {
             throw new CustomException(ErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
@@ -79,8 +97,25 @@ public class JwtTokenProvider {
         }
     }
 
-    public void invalidateRefreshToken(String email) {
+    /** 로그아웃: Refresh Token 삭제 + Access Token 블랙리스트 등록 */
+    public void invalidateTokens(String email, String accessToken) {
         redisTemplate.delete(REFRESH_TOKEN_PREFIX + email);
+
+        // Access Token 남은 유효시간만큼 블랙리스트에 등록
+        try {
+            Date expiration = parseClaims(accessToken).getExpiration();
+            long remainMs = expiration.getTime() - System.currentTimeMillis();
+            if (remainMs > 0) {
+                redisTemplate.opsForValue().set(
+                        BLACKLIST_TOKEN_PREFIX + accessToken,
+                        "logout",
+                        remainMs,
+                        TimeUnit.MILLISECONDS
+                );
+            }
+        } catch (JwtException e) {
+            log.warn("로그아웃 토큰 파싱 실패 (이미 만료된 토큰): {}", e.getMessage());
+        }
     }
 
     private String buildToken(String subject, long expireMs) {

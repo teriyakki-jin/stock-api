@@ -51,8 +51,12 @@ public class AuthService {
         return TokenResponse.of(accessToken, refreshToken);
     }
 
-    @Transactional
-    public void logout(String email) {
-        jwtTokenProvider.invalidateRefreshToken(email);
+    public void logout(String email, String accessToken) {
+        jwtTokenProvider.invalidateTokens(email, accessToken);
+    }
+
+    /** Refresh Token으로 새 Access Token 발급 */
+    public String refresh(String refreshToken) {
+        return jwtTokenProvider.refreshAccessToken(refreshToken);
     }
 }
