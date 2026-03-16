@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: stock-api
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stockdb
+    username: ${DB_USERNAME:stockuser}
+    password: ${DB_PASSWORD:stockpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_batch_fetch_size: 100
+    open-in-view: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+jwt:
+  secret: ${JWT_SECRET:eW91ci0yNTYtYml0LXNlY3JldC1rZXktbXVzdC1iZS1hdC1sZWFzdC0zMi1jaGFycw==}
+  access-token-expire-ms: 1800000      # 30분
+  refresh-token-expire-ms: 604800000   # 7일
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.nh.stockapi: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stockdb
+    username: stockuser
+    password: stockpass
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
