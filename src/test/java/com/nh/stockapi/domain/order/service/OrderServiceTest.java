@@ -20,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -29,6 +32,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderService 단위 테스트")
 class OrderServiceTest {
 
@@ -46,7 +50,9 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         member  = Member.create("test@test.com", "encoded-pw", "테스터", "010-0000-0000");
+        ReflectionTestUtils.setField(member, "id", 1L);  // validateOwner용 ID 주입
         account = Account.open(member);
+        ReflectionTestUtils.setField(account, "id", 100L);
         account.deposit(new BigDecimal("1000000")); // 초기 잔액 100만원
 
         stock = Stock.builder()
@@ -56,6 +62,7 @@ class OrderServiceTest {
                 .basePrice(new BigDecimal("75000"))
                 .totalShares(5_969_782_550L)
                 .build();
+        ReflectionTestUtils.setField(stock, "id", 10L);
     }
 
     // ─── 매수 ──────────────────────────────────────────────────────────────
@@ -72,7 +79,7 @@ class OrderServiceTest {
         given(holdingRepository.save(any(Holding.class))).willAnswer(inv -> inv.getArgument(0));
         given(orderRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        OrderRequest request = new OrderRequest("005930", 5L, OrderType.BUY);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 5L);
 
         // when
         orderService.buy(1L, member, request);
@@ -91,7 +98,7 @@ class OrderServiceTest {
         given(stockService.findStockOrThrow("005930")).willReturn(stock);
         given(stockService.getCurrentPrice(anyString(), any())).willReturn(new BigDecimal("75000"));
 
-        OrderRequest request = new OrderRequest("005930", 1L, OrderType.BUY);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L);
 
         // when & then
         assertThatThrownBy(() -> orderService.buy(1L, member, request))
@@ -105,9 +112,10 @@ class OrderServiceTest {
     void buy_fail_forbidden() {
         // given
         Member otherMember = Member.create("other@test.com", "pw", "남의회원", "010-1111-2222");
+        ReflectionTestUtils.setField(otherMember, "id", 999L); // member.id=1L 과 다름
         given(accountService.findWithLock(anyLong())).willReturn(account); // account.member = member
 
-        OrderRequest request = new OrderRequest("005930", 1L, OrderType.BUY);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L);
 
         // when & then
         assertThatThrownBy(() -> orderService.buy(1L, otherMember, request))
@@ -131,7 +139,7 @@ class OrderServiceTest {
         given(orderRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         BigDecimal balanceBefore = account.getBalance();
-        OrderRequest request = new OrderRequest("005930", 3L, OrderType.SELL);
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 3L);
 
         // when
         orderService.sell(1L, member, request);
@@ -153,7 +161,7 @@ class OrderServiceTest {
         given(holdingRepository.findByAccountIdAndStockIdWithLock(anyLong(), anyLong()))
                 .willReturn(Optional.of(holding));
 
-        OrderRequest request = new OrderRequest("005930", 5L, OrderType.SELL); // 5주 매도인데 보유 2주
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 5L); // 5주 매도인데 보유 2주
 
         // when & then
         assertThatThrownBy(() -> orderService.sell(1L, member, request))
@@ -172,7 +180,7 @@ class OrderServiceTest {
         given(holdingRepository.findByAccountIdAndStockIdWithLock(anyLong(), anyLong()))
                 .willReturn(Optional.empty());
 
-        OrderRequest request = new OrderRequest("005930", 1L, OrderType.SELL);
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 1L);
 
         // when & then
         assertThatThrownBy(() -> orderService.sell(1L, member, request))

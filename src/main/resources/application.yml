@@ -95,3 +95,6 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RpbmctcHVycG9zZXMtb25seQ==  # test 전용
