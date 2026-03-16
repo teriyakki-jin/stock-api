@@ -12,20 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: sa
-          POSTGRES_PASSWORD: ""
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+      # test 프로파일은 H2 인메모리 DB 사용 → PostgreSQL 불필요
       redis:
         image: redis:7-alpine
         ports:
