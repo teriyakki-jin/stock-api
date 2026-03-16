@@ -123,7 +123,7 @@ public class OrderService {
     }
 
     private Account findAccountAndValidate(Long accountId, Member member) {
-        Account account = accountService.findWithLock(accountId);
+        Account account = accountService.findById(accountId);  // 읽기 전용 — 락 불필요
         validateOwner(account, member);
         return account;
     }

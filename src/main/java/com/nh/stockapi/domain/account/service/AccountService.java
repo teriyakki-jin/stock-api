@@ -56,9 +56,15 @@ public class AccountService {
         account.close();
     }
 
-    // 주문 서비스에서 사용하는 락 버전
+    // 주문 서비스에서 사용하는 락 버전 (쓰기 트랜잭션 전용)
     public Account findWithLock(Long accountId) {
         return accountRepository.findByIdWithLock(accountId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    // 주문 서비스에서 사용하는 락 없는 버전 (읽기 전용)
+    public Account findById(Long accountId) {
+        return accountRepository.findById(accountId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
