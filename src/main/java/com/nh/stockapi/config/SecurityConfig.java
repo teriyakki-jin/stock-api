@@ -37,7 +37,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/ws/**"          // WebSocket STOMP 엔드포인트
                         ).permitAll()
                         // 종목 조회는 누구나
                         .requestMatchers(HttpMethod.GET, "/api/v1/stocks/**").permitAll()
