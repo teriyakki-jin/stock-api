@@ -3,9 +3,9 @@ spring:
     name: stock-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/stockdb
-    username: ${DB_USERNAME:stockuser}
-    password: ${DB_PASSWORD:stockpass}
+    url: jdbc:postgresql://localhost:${DB_PORT:15432}/stockdb
+    username: ${DB_USERNAME:stock}
+    password: ${DB_PASSWORD:stock}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -61,14 +61,20 @@ spring:
       on-profile: local
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/stockdb
-    username: stockuser
-    password: stockpass
+    url: jdbc:postgresql://localhost:15432/stockdb
+    username: stock
+    password: stock
 
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
 
 jwt:
   secret: bG9jYWwtZGV2LW9ubHktc2VjcmV0LWtleS1kb250LXVzZS1pbi1wcm9kdWN0aW9u  # local 전용

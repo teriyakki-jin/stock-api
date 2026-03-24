@@ -18,7 +18,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -90,7 +89,7 @@ public class OrderController {
 
     @Operation(summary = "주문 체결 SSE 구독")
     @GetMapping(value = "/api/v1/orders/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribeOrderEvents(@AuthenticationPrincipal UserDetails userDetails) {
-        return sseEmitterService.subscribe(userDetails.getUsername());
+    public SseEmitter subscribeOrderEvents(@AuthenticationPrincipal Member member) {
+        return sseEmitterService.subscribe(member.getEmail());
     }
 }
