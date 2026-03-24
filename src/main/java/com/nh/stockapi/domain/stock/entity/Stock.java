@@ -46,4 +46,15 @@ public class Stock extends BaseEntity {
     public void updateBasePrice(BigDecimal basePrice) {
         this.basePrice = basePrice;
     }
+
+    /**
+     * Yahoo Finance 심볼 변환.
+     * KOSPI → {ticker}.KS / KOSDAQ → {ticker}.KQ
+     */
+    public String getYahooSymbol() {
+        return switch (market.toUpperCase()) {
+            case "KOSDAQ" -> ticker + ".KQ";
+            default -> ticker + ".KS";   // KOSPI
+        };
+    }
 }

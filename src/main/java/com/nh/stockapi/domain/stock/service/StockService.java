@@ -2,6 +2,7 @@ package com.nh.stockapi.domain.stock.service;
 
 import com.nh.stockapi.common.exception.CustomException;
 import com.nh.stockapi.common.exception.ErrorCode;
+import com.nh.stockapi.domain.stock.dto.StockPriceData;
 import com.nh.stockapi.domain.stock.dto.StockResponse;
 import com.nh.stockapi.domain.stock.entity.Stock;
 import com.nh.stockapi.domain.stock.repository.StockRepository;
@@ -26,10 +27,7 @@ public class StockService {
                 : stockRepository.findByNameContainingIgnoreCaseOrTickerContaining(keyword, keyword);
 
         return stocks.stream()
-                .map(stock -> {
-                    BigDecimal price = stockPriceService.getCurrentPriceOrBase(stock.getTicker(), stock.getBasePrice());
-                    return StockResponse.of(stock, price);
-                })
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -37,18 +35,22 @@ public class StockService {
     public StockResponse getStock(String ticker) {
         Stock stock = stockRepository.findByTicker(ticker)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
-        BigDecimal price = stockPriceService.getCurrentPriceOrBase(ticker, stock.getBasePrice());
-        return StockResponse.of(stock, price);
+        return toResponse(stock);
     }
 
-    // 주문 서비스에서 사용
     public Stock findStockOrThrow(String ticker) {
         return stockRepository.findByTicker(ticker)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
     }
 
-    // 현재가 직접 조회 (주문 체결 시 사용)
+    /** 주문 체결 시 현재가 조회 (basePrice fallback 포함) */
     public BigDecimal getCurrentPrice(String ticker, BigDecimal basePrice) {
         return stockPriceService.getCurrentPriceOrBase(ticker, basePrice);
+    }
+
+    private StockResponse toResponse(Stock stock) {
+        return stockPriceService.getCurrentPriceData(stock.getTicker())
+                .map(data -> StockResponse.of(stock, data))
+                .orElse(StockResponse.ofFallback(stock));
     }
 }
