@@ -79,7 +79,7 @@ class OrderServiceTest {
         given(holdingRepository.save(any(Holding.class))).willAnswer(inv -> inv.getArgument(0));
         given(orderRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 5L);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 5L, null);
 
         // when
         orderService.buy(1L, member, request);
@@ -98,7 +98,7 @@ class OrderServiceTest {
         given(stockService.findStockOrThrow("005930")).willReturn(stock);
         given(stockService.getCurrentPrice(anyString(), any())).willReturn(new BigDecimal("75000"));
 
-        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L, null);
 
         // when & then
         assertThatThrownBy(() -> orderService.buy(1L, member, request))
@@ -115,7 +115,7 @@ class OrderServiceTest {
         ReflectionTestUtils.setField(otherMember, "id", 999L); // member.id=1L 과 다름
         given(accountService.findWithLock(anyLong())).willReturn(account); // account.member = member
 
-        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L);
+        OrderRequest request = new OrderRequest("005930", OrderType.BUY, 1L, null);
 
         // when & then
         assertThatThrownBy(() -> orderService.buy(1L, otherMember, request))
@@ -139,7 +139,7 @@ class OrderServiceTest {
         given(orderRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         BigDecimal balanceBefore = account.getBalance();
-        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 3L);
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 3L, null);
 
         // when
         orderService.sell(1L, member, request);
@@ -161,7 +161,7 @@ class OrderServiceTest {
         given(holdingRepository.findByAccountIdAndStockIdWithLock(anyLong(), anyLong()))
                 .willReturn(Optional.of(holding));
 
-        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 5L); // 5주 매도인데 보유 2주
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 5L, null); // 5주 매도인데 보유 2주
 
         // when & then
         assertThatThrownBy(() -> orderService.sell(1L, member, request))
@@ -180,7 +180,7 @@ class OrderServiceTest {
         given(holdingRepository.findByAccountIdAndStockIdWithLock(anyLong(), anyLong()))
                 .willReturn(Optional.empty());
 
-        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 1L);
+        OrderRequest request = new OrderRequest("005930", OrderType.SELL, 1L, null);
 
         // when & then
         assertThatThrownBy(() -> orderService.sell(1L, member, request))

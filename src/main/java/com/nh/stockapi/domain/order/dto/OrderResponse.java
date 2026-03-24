@@ -14,6 +14,8 @@ public record OrderResponse(
         Long quantity,
         BigDecimal unitPrice,
         BigDecimal totalAmount,
+        BigDecimal limitPrice,    // null = 시장가
+        Long remainingQty,        // 미체결 수량
         LocalDateTime executedAt
 ) {
     public static OrderResponse from(Order order) {
@@ -26,6 +28,8 @@ public record OrderResponse(
                 order.getQuantity(),
                 order.getUnitPrice(),
                 order.getTotalAmount(),
+                order.getLimitPrice(),
+                order.getRemainingQty(),
                 order.getCreatedAt()
         );
     }

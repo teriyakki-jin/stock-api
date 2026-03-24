@@ -18,6 +18,11 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
             @Param("accountId") Long accountId,
             @Param("stockId") Long stockId);
 
+    @Query("SELECT h FROM Holding h WHERE h.account.id = :accountId AND h.stock.id = :stockId")
+    Optional<Holding> findByAccountIdAndStockId(
+            @Param("accountId") Long accountId,
+            @Param("stockId") Long stockId);
+
     @Query("SELECT h FROM Holding h JOIN FETCH h.stock WHERE h.account.id = :accountId AND h.quantity > 0")
     List<Holding> findByAccountIdWithStock(@Param("accountId") Long accountId);
 }

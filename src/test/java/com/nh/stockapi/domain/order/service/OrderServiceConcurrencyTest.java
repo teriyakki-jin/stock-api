@@ -78,7 +78,7 @@ class OrderServiceConcurrencyTest {
         for (int i = 0; i < threadCount; i++) {
             executor.submit(() -> {
                 try {
-                    OrderRequest req = new OrderRequest("CONC001", OrderType.BUY, quantityPerThread);
+                    OrderRequest req = new OrderRequest("CONC001", OrderType.BUY, quantityPerThread, null);
                     orderService.buy(account.getId(), member, req);
                     successCount.incrementAndGet();
                 } catch (Exception e) {

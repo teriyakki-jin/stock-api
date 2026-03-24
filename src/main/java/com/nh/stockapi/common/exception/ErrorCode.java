@@ -31,7 +31,8 @@ public enum ErrorCode {
     // 종목/주문
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "종목을 찾을 수 없습니다."),
     INSUFFICIENT_HOLDINGS(HttpStatus.BAD_REQUEST, "보유 수량이 부족합니다."),
-    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다.");
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
+    ORDER_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문입니다.");
 
     private final HttpStatus status;
     private final String message;
