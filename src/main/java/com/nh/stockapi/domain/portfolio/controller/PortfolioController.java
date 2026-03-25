@@ -2,16 +2,14 @@ package com.nh.stockapi.domain.portfolio.controller;
 
 import com.nh.stockapi.common.response.ApiResponse;
 import com.nh.stockapi.domain.member.entity.Member;
+import com.nh.stockapi.domain.portfolio.dto.PortfolioAnalysisResponse;
 import com.nh.stockapi.domain.portfolio.dto.PortfolioSummaryResponse;
 import com.nh.stockapi.domain.portfolio.service.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "포트폴리오", description = "포트폴리오 요약 / 배분 / 수익률")
 @RestController
@@ -27,5 +25,15 @@ public class PortfolioController {
             @PathVariable Long accountId,
             @AuthenticationPrincipal Member member) {
         return ApiResponse.ok(portfolioService.getSummary(accountId, member));
+    }
+
+    @Operation(summary = "포트폴리오 심화 분석",
+               description = "수익률 곡선, 섹터 비중, 승률, MDD 반환. days 파라미터로 분석 기간 조정 (기본 30일)")
+    @GetMapping("/analysis")
+    public ApiResponse<PortfolioAnalysisResponse> getAnalysis(
+            @PathVariable Long accountId,
+            @RequestParam(defaultValue = "30") int days,
+            @AuthenticationPrincipal Member member) {
+        return ApiResponse.ok(portfolioService.getAnalysis(accountId, member, days));
     }
 }

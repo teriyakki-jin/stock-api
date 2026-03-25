@@ -28,6 +28,9 @@ public class Stock extends BaseEntity {
     @Column(nullable = false, length = 20)
     private String market;        // KOSPI / KOSDAQ
 
+    @Column(length = 30)
+    private String sector;        // 섹터 (반도체, IT, 자동차, 화학 등)
+
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal basePrice; // 기준가 (당일 시초가)
 
@@ -35,10 +38,12 @@ public class Stock extends BaseEntity {
     private Long totalShares;     // 상장 주식 수
 
     @Builder
-    public Stock(String ticker, String name, String market, BigDecimal basePrice, Long totalShares) {
+    public Stock(String ticker, String name, String market, String sector,
+                 BigDecimal basePrice, Long totalShares) {
         this.ticker = ticker;
         this.name = name;
         this.market = market;
+        this.sector = sector;
         this.basePrice = basePrice;
         this.totalShares = totalShares;
     }

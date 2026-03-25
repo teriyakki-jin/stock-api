@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -29,4 +30,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o JOIN FETCH o.stock WHERE o.account.id = :accountId AND o.status = 'PENDING' ORDER BY o.createdAt DESC")
     List<Order> findPendingByAccountId(@Param("accountId") Long accountId);
+
+    /** 포트폴리오 분석용: 계좌의 체결 주문 전체 (시간 오름차순) */
+    @Query("SELECT o FROM Order o JOIN FETCH o.stock " +
+           "WHERE o.account.id = :accountId AND o.status = 'FILLED' " +
+           "AND o.createdAt >= :from ORDER BY o.createdAt ASC")
+    List<Order> findFilledSince(@Param("accountId") Long accountId,
+                                @Param("from") LocalDateTime from);
 }
