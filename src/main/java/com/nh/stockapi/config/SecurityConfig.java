@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/stocks/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ranking").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/profile/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/social/counts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/social/followers/**").permitAll()
                         // 나머지 전부 인증 필요
                         .anyRequest().authenticated()
                 )

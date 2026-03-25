@@ -162,4 +162,91 @@ public class SupabaseClient {
             return null;
         }
     }
+
+    // ─────────────────────────────────────────────────────────
+    // follows (소셜)
+    // ─────────────────────────────────────────────────────────
+
+    public void follow(Long followerId, Long followingId) {
+        try {
+            jdbc.update("""
+                INSERT INTO follows (follower_id, following_id)
+                VALUES (?, ?)
+                ON CONFLICT (follower_id, following_id) DO NOTHING
+                """, followerId, followingId);
+        } catch (Exception e) {
+            log.error("팔로우 실패: {}", e.getMessage());
+            throw new com.nh.stockapi.common.exception.CustomException(
+                com.nh.stockapi.common.exception.ErrorCode.SUPABASE_API_ERROR);
+        }
+    }
+
+    public void unfollow(Long followerId, Long followingId) {
+        try {
+            jdbc.update("DELETE FROM follows WHERE follower_id = ? AND following_id = ?",
+                followerId, followingId);
+        } catch (Exception e) {
+            log.error("언팔로우 실패: {}", e.getMessage());
+            throw new com.nh.stockapi.common.exception.CustomException(
+                com.nh.stockapi.common.exception.ErrorCode.SUPABASE_API_ERROR);
+        }
+    }
+
+    public boolean isFollowing(Long followerId, Long followingId) {
+        try {
+            Integer cnt = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM follows WHERE follower_id = ? AND following_id = ?",
+                Integer.class, followerId, followingId);
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public List<Map<String, Object>> getFollowers(Long memberId, int offset, int limit) {
+        try {
+            return jdbc.queryForList("""
+                SELECT p.local_member_id, p.nickname, p.avatar_url, f.created_at
+                FROM follows f
+                JOIN profiles p ON p.local_member_id = f.follower_id
+                WHERE f.following_id = ?
+                ORDER BY f.created_at DESC
+                OFFSET ? LIMIT ?
+                """, memberId, offset, limit);
+        } catch (Exception e) {
+            log.warn("팔로워 조회 실패: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public List<Map<String, Object>> getFollowings(Long memberId, int offset, int limit) {
+        try {
+            return jdbc.queryForList("""
+                SELECT p.local_member_id, p.nickname, p.avatar_url, f.created_at
+                FROM follows f
+                JOIN profiles p ON p.local_member_id = f.following_id
+                WHERE f.follower_id = ?
+                ORDER BY f.created_at DESC
+                OFFSET ? LIMIT ?
+                """, memberId, offset, limit);
+        } catch (Exception e) {
+            log.warn("팔로잉 조회 실패: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public Map<String, Object> getFollowCounts(Long memberId) {
+        try {
+            Integer followers = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM follows WHERE following_id = ?", Integer.class, memberId);
+            Integer followings = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM follows WHERE follower_id = ?", Integer.class, memberId);
+            return Map.of(
+                "followerCount",  followers  != null ? followers  : 0,
+                "followingCount", followings != null ? followings : 0
+            );
+        } catch (Exception e) {
+            return Map.of("followerCount", 0, "followingCount", 0);
+        }
+    }
 }
