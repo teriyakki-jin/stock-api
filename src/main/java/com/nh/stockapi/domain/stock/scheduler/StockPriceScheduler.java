@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Profile("!test")
+@Profile("!test & !local")
 @RequiredArgsConstructor
 public class StockPriceScheduler {
 
