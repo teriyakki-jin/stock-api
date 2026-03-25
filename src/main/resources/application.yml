@@ -127,3 +127,6 @@ spring:
 
 jwt:
   secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RpbmctcHVycG9zZXMtb25seQ==  # test 전용
+
+supabase:
+  jwt-secret: dGVzdC1zdXBhYmFzZS1qd3Qtc2VjcmV0LWxvbmctZW5vdWdoLWZvci1oczI1Ng==  # test 전용 (46바이트 = 368비트)
