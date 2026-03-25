@@ -114,6 +114,11 @@ spring:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
     show-sql: true
+    defer-datasource-initialization: true  # Hibernate DDL 먼저, data.sql 나중
+
+  sql:
+    init:
+      mode: never  # 테스트는 각 테스트가 직접 데이터 세팅 (data.sql 불필요)
 
   data:
     redis:
