@@ -24,26 +24,38 @@ public class Member extends BaseEntity implements UserDetails {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(nullable = false, length = 20, unique = true)
+    @Column(nullable = true, length = 20, unique = true)
     private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
+    /** Supabase Auth 사용자 UUID (OAuth 로그인 시 설정) */
+    @Column(name = "supabase_uid", unique = true, length = 36)
+    private String supabaseUid;
+
+    /** 가입 경로 */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private AuthProvider provider;
+
     @Builder
-    private Member(String email, String password, String name, String phone, Role role) {
+    private Member(String email, String password, String name, String phone,
+                   Role role, String supabaseUid, AuthProvider provider) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.role = role;
+        this.supabaseUid = supabaseUid;
+        this.provider = provider;
     }
 
     public static Member create(String email, String encodedPassword,
@@ -54,7 +66,24 @@ public class Member extends BaseEntity implements UserDetails {
                 .name(name)
                 .phone(phone)
                 .role(Role.USER)
+                .provider(AuthProvider.LOCAL)
                 .build();
+    }
+
+    public static Member createOAuth(String email, String name,
+                                     String supabaseUid, AuthProvider provider) {
+        return Member.builder()
+                .email(email)
+                .name(name)
+                .role(Role.USER)
+                .supabaseUid(supabaseUid)
+                .provider(provider)
+                .build();
+    }
+
+    public void linkSupabase(String supabaseUid, AuthProvider provider) {
+        this.supabaseUid = supabaseUid;
+        this.provider = provider;
     }
 
     // UserDetails

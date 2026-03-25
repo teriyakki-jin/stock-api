@@ -40,8 +40,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/ws/**"          // WebSocket STOMP 엔드포인트
                         ).permitAll()
-                        // 종목 조회는 누구나
+                        // 종목 조회 / 랭킹 조회는 누구나
                         .requestMatchers(HttpMethod.GET, "/api/v1/stocks/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/ranking").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/profile/public/**").permitAll()
                         // 나머지 전부 인증 필요
                         .anyRequest().authenticated()
                 )

@@ -41,6 +41,12 @@ jwt:
   access-token-expire-ms: 1800000      # 30분
   refresh-token-expire-ms: 604800000   # 7일
 
+supabase:
+  url: ${SUPABASE_URL:https://tylxnldgwrqyvnyykflj.supabase.co}
+  anon-key: ${SUPABASE_ANON_KEY:sb_publishable_V3edZpybkbLLVUN_Wd5kRQ_ylahowLV}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}   # 필수 환경변수 — application-secrets.yml 또는 환경변수로 설정
+  jwt-secret: ${SUPABASE_JWT_SECRET}                # 필수 환경변수 — Settings > API > JWT Secret
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -59,6 +65,7 @@ spring:
   config:
     activate:
       on-profile: local
+    import: "optional:classpath:application-secrets.yml"
 
   datasource:
     url: jdbc:postgresql://localhost:15432/stockdb

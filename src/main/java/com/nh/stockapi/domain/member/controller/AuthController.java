@@ -2,6 +2,7 @@ package com.nh.stockapi.domain.member.controller;
 
 import com.nh.stockapi.common.response.ApiResponse;
 import com.nh.stockapi.domain.member.dto.LoginRequest;
+import com.nh.stockapi.domain.member.dto.OAuthLoginRequest;
 import com.nh.stockapi.domain.member.dto.RefreshTokenRequest;
 import com.nh.stockapi.domain.member.dto.SignUpRequest;
 import com.nh.stockapi.domain.member.dto.TokenResponse;
@@ -54,6 +55,12 @@ public class AuthController {
     public ApiResponse<String> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         String newAccessToken = authService.refresh(request.refreshToken());
         return ApiResponse.ok("토큰이 갱신되었습니다.", newAccessToken);
+    }
+
+    @Operation(summary = "OAuth 로그인 (Google / GitHub) — Supabase JWT → 자체 JWT 교환")
+    @PostMapping("/oauth")
+    public ApiResponse<TokenResponse> oauthLogin(@Valid @RequestBody OAuthLoginRequest request) {
+        return ApiResponse.ok(authService.oauthLogin(request));
     }
 
     private String resolveToken(HttpServletRequest request) {
