@@ -6,6 +6,7 @@ import com.nh.stockapi.infrastructure.supabase.SupabaseClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/social")
 @RequiredArgsConstructor
+@Profile("!test")
 public class SocialController {
 
     private final SupabaseClient supabaseClient;

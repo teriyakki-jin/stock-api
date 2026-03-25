@@ -4,6 +4,7 @@ import com.nh.stockapi.common.exception.CustomException;
 import com.nh.stockapi.common.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import java.util.*;
  */
 @Slf4j
 @Component
+@Profile("!test")
 public class SupabaseClient {
 
     private final JdbcTemplate jdbc;

@@ -3,6 +3,7 @@ package com.nh.stockapi.domain.ranking.scheduler;
 import com.nh.stockapi.domain.ranking.service.RankingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Profile("!test")
 public class RankingScheduler {
 
     private final RankingService rankingService;
