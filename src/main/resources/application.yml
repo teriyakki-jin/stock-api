@@ -51,6 +51,13 @@ supabase:
     username: ${SUPABASE_DB_USERNAME:postgres}
     password: ${SUPABASE_DB_PASSWORD}              # 필수 — application-secrets.yml 참고
 
+kis:
+  base-url: ${KIS_BASE_URL:https://openapi.koreainvestment.com:9443}
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  account-no: ${KIS_ACCOUNT_NO:}        # 계좌번호 (8자리-2자리)
+  mock: ${KIS_MOCK:true}                # true=모의투자 서버, false=실투자 서버
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
