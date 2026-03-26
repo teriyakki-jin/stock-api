@@ -8,6 +8,7 @@ import com.nh.stockapi.domain.alert.dto.PriceAlertRequest;
 import com.nh.stockapi.domain.alert.dto.PriceAlertResponse;
 import com.nh.stockapi.domain.alert.entity.PriceAlert;
 import com.nh.stockapi.domain.alert.repository.PriceAlertRepository;
+import com.nh.stockapi.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,27 +26,29 @@ public class PriceAlertService {
     private final AccountRepository accountRepository;
 
     @Transactional
-    public PriceAlertResponse create(Long accountId, PriceAlertRequest req) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
+    public PriceAlertResponse create(Long accountId, PriceAlertRequest req, Member member) {
+        Account account = findAccountOfMember(accountId, member);
         PriceAlert alert = PriceAlert.create(account, req.ticker(), req.targetPrice(), req.condition());
         return PriceAlertResponse.from(alertRepository.save(alert));
     }
 
     @Transactional(readOnly = true)
-    public List<PriceAlertResponse> list(Long accountId) {
+    public List<PriceAlertResponse> list(Long accountId, Member member) {
+        validateOwnership(accountId, member);
         return alertRepository.findByAccountIdOrderByCreatedAtDesc(accountId)
                 .stream().map(PriceAlertResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<PriceAlertResponse> listUnacknowledged(Long accountId) {
+    public List<PriceAlertResponse> listUnacknowledged(Long accountId, Member member) {
+        validateOwnership(accountId, member);
         return alertRepository.findUnacknowledgedByAccountId(accountId)
                 .stream().map(PriceAlertResponse::from).toList();
     }
 
     @Transactional
-    public void delete(Long accountId, Long alertId) {
+    public void delete(Long accountId, Long alertId, Member member) {
+        validateOwnership(accountId, member);
         PriceAlert alert = alertRepository.findById(alertId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ALERT_NOT_FOUND));
         if (!alert.getAccount().getId().equals(accountId)) {
@@ -55,13 +58,31 @@ public class PriceAlertService {
     }
 
     @Transactional
-    public void acknowledge(Long accountId, Long alertId) {
+    public void acknowledge(Long accountId, Long alertId, Member member) {
+        validateOwnership(accountId, member);
         PriceAlert alert = alertRepository.findById(alertId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ALERT_NOT_FOUND));
         if (!alert.getAccount().getId().equals(accountId)) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         alert.acknowledge();
+    }
+
+    private Account findAccountOfMember(Long accountId, Member member) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
+        if (!account.getMember().getId().equals(member.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        return account;
+    }
+
+    private void validateOwnership(Long accountId, Member member) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
+        if (!account.getMember().getId().equals(member.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
     }
 
     /** StockPricePublisher에서 가격 업데이트 시 호출 */

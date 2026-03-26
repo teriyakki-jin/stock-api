@@ -4,12 +4,12 @@ import com.nh.stockapi.common.response.ApiResponse;
 import com.nh.stockapi.domain.alert.dto.PriceAlertRequest;
 import com.nh.stockapi.domain.alert.dto.PriceAlertResponse;
 import com.nh.stockapi.domain.alert.service.PriceAlertService;
+import com.nh.stockapi.domain.member.entity.Member;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,28 +27,33 @@ public class PriceAlertController {
     public ApiResponse<PriceAlertResponse> create(
             @PathVariable Long accountId,
             @RequestBody @Valid PriceAlertRequest req,
-            @AuthenticationPrincipal UserDetails user) {
-        return ApiResponse.ok(alertService.create(accountId, req));
+            @AuthenticationPrincipal Member member) {
+        return ApiResponse.ok(alertService.create(accountId, req, member));
     }
 
     @Operation(summary = "알림 목록")
     @GetMapping
-    public ApiResponse<List<PriceAlertResponse>> list(@PathVariable Long accountId) {
-        return ApiResponse.ok(alertService.list(accountId));
+    public ApiResponse<List<PriceAlertResponse>> list(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal Member member) {
+        return ApiResponse.ok(alertService.list(accountId, member));
     }
 
     @Operation(summary = "미확인 발동 알림 조회")
     @GetMapping("/pending")
-    public ApiResponse<List<PriceAlertResponse>> pending(@PathVariable Long accountId) {
-        return ApiResponse.ok(alertService.listUnacknowledged(accountId));
+    public ApiResponse<List<PriceAlertResponse>> pending(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal Member member) {
+        return ApiResponse.ok(alertService.listUnacknowledged(accountId, member));
     }
 
     @Operation(summary = "알림 삭제")
     @DeleteMapping("/{alertId}")
     public ApiResponse<Void> delete(
             @PathVariable Long accountId,
-            @PathVariable Long alertId) {
-        alertService.delete(accountId, alertId);
+            @PathVariable Long alertId,
+            @AuthenticationPrincipal Member member) {
+        alertService.delete(accountId, alertId, member);
         return ApiResponse.ok(null);
     }
 
@@ -56,8 +61,9 @@ public class PriceAlertController {
     @PatchMapping("/{alertId}/acknowledge")
     public ApiResponse<Void> acknowledge(
             @PathVariable Long accountId,
-            @PathVariable Long alertId) {
-        alertService.acknowledge(accountId, alertId);
+            @PathVariable Long alertId,
+            @AuthenticationPrincipal Member member) {
+        alertService.acknowledge(accountId, alertId, member);
         return ApiResponse.ok(null);
     }
 }
