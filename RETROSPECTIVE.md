@@ -1,148 +1,127 @@
-# 주식 매매 API 프로젝트 회고
+# NEXUS 프로젝트 회고
 
-> 작성일: 2026-03-16
-> 프로젝트: [stock-api](https://github.com/teriyakki-jin/stock-api) + [stock-frontend](https://github.com/teriyakki-jin/stock-frontend)
+> 작성일: 2026-03-26
+> 프로젝트: [stock-api](https://github.com/teriyakki-jin/stock-api) · [stock-frontend](https://github.com/teriyakki-jin/stock-frontend) · [rag-report](https://github.com/teriyakki-jin/investment-report-rag)
 
 ---
 
 ## 무엇을 만들었나
 
-Spring Boot 기반 주식 모의투자 REST API와 Bloomberg Terminal 스타일의 React 프론트엔드.
+Bloomberg Terminal 스타일 모의주식거래 플랫폼 + 증권사 리포트 기반 AI 분석 시스템.
 
-| 항목 | 내용 |
-|------|------|
-| 백엔드 | Spring Boot 4.0.3, Java 17, PostgreSQL 16, Redis 7 |
-| 프론트엔드 | React 18, TypeScript, Vite, Zustand, React Query, Tailwind |
-| 주요 기능 | 회원가입/로그인, 계좌 개설/입금, 주식 매수/매도, 보유 종목 조회 |
-| 보안 | JWT Access(30분) + Refresh(7일), Access Token 블랙리스트, 비관적 락 |
-| 인프라 | Docker Compose, Dockerfile 멀티스테이지 빌드, GitHub Actions CI |
+| 레포 | 기술 | 역할 |
+|------|------|------|
+| `stock-api` | Spring Boot 4.0.3, Java 17, PostgreSQL 16, Redis 7 | 주문/계좌/실시간 시세/소셜 REST API |
+| `stock-frontend` | React 18, TypeScript, Vite, Tailwind, Recharts | Bloomberg 테마 SPA |
+| `rag-report` | Python 3.11, FastAPI, GPT-4o, Qdrant, BM25 | 하이브리드 RAG 챗봇 |
 
 ---
 
 ## 타임라인
 
 ```
-1. 백엔드 초기 구현 (Spring Boot 뼈대 + 도메인 설계)
-2. GitHub 배포 (teriyakki-jin/stock-api)
-3. 앱 실행 및 API 검증
-4. 프론트엔드 구현 (Bloomberg Terminal 테마)
-5. 모노레포 재구성 (stock-frontend: backend/ + frontend/)
-6. 프로젝트 평가 + 우선순위 기반 개선
-7. 테스트 작성 + CI 구축 + 버그 수정
+Phase 1  — 백엔드 뼈대 (도메인 설계, 회원/계좌/주문)
+Phase 2  — 프론트엔드 초기 구현 (Bloomberg 테마, 거래 UI)
+Phase 3  — 테스트 + CI 구축 (GitHub Actions, H2 in-memory)
+Phase 4  — 보안 강화 (JWT 블랙리스트, 비관적 락)
+Phase 5  — GBM 시뮬레이션 (장외 시간 가격 모델링)
+Phase 6  — 포트폴리오 고도화 (PnL 곡선, MDD, 섹터 비중)
+Phase 7  — 소셜 기능 (Supabase — 팔로우/랭킹/프로필)
+Phase 8  — KIS OpenAPI 실시간 시세 (Yahoo Finance 폴백)
+Phase 9  — RAG 파이프라인 (네이버 금융 크롤링 → Qdrant → GPT-4o)
+Phase 10 — 가격 알림 (목표주가 도달 시 실시간 알림)
+           + Docker 컨테이너화 + 보안 수정
 ```
 
 ---
 
 ## 잘 된 것들
 
-### 1. 도메인 설계가 깔끔했다
-`Member → Account → Holding → Order` 흐름이 명확했고, 각 엔티티 책임이 분리되어 있어서 기능 추가 시 충돌이 없었다. `Account.withdraw()` 안에서 잔액 검증을 하는 방식이 도메인 로직을 엔티티에 응집시킨 좋은 사례.
+### 1. 도메인 모델이 Phase 10까지 버텼다
 
-### 2. 비관적 락으로 동시성 문제를 깔끔하게 해결했다
-10개 스레드가 동시에 매수 주문을 넣어도 잔액이 정확히 차감됨을 `CountDownLatch`로 검증했다. `PESSIMISTIC_WRITE` 락을 리포지토리 쿼리 메서드 레벨에서 걸어서 서비스 코드는 깨끗하게 유지됐다.
+`Member → Account → Holding → Order` 의 4계층 구조가 Phase 1에서 설계됐는데, Phase 10에서 `PriceAlert`를 `Account`에 붙이는 것도 자연스러웠다. 엔티티에 도메인 로직을 응집시킨 패턴 (`Account.withdraw()`, `PriceAlert.checkAndTrigger()`) 덕분에 서비스 레이어가 얇게 유지됐다.
 
-### 3. Redis를 이중으로 활용했다
-Refresh Token 저장 + Access Token 블랙리스트, 두 가지 역할을 Redis 하나로 처리. prefix(`RT:`, `BL:`)로 키 충돌 없이 깔끔하게 분리했다.
+### 2. 비관적 락으로 동시성을 정확하게 잡았다
 
-### 4. 프론트 UX가 의도한 방향으로 나왔다
-Bloomberg Terminal 스타일 — 초록 텍스트, 검정 배경, 모노스페이스 폰트 — 을 Tailwind 커스텀 팔레트로 구현. React Query로 서버 상태와 로컬 상태를 명확하게 구분했다.
+10개 스레드가 동시에 매수 주문을 넣어도 잔액이 정확히 차감됨을 `CountDownLatch`로 검증했다. `PESSIMISTIC_WRITE` + `@Transactional` 조합이 select-for-update를 깔끔하게 구현했다.
+
+### 3. GBM 시뮬레이션이 실제처럼 작동했다
+
+장외 시간에도 거래가 가능하도록 1년치 실데이터 기반으로 σ(연간 변동성)·μ(드리프트)를 자동 추정하고, Cholesky 분해로 종목 간 상관관계를 보존했다. 시간대별 변동성 배율(장 시작 1.8×, 마감 1.4×, 점심 0.8×)도 실제 시장 패턴과 유사하게 나왔다.
+
+### 4. Supabase 이중 DataSource 패턴이 깔끔했다
+
+로컬 PostgreSQL(계좌/주문) + Supabase(프로필/소셜/랭킹) 를 Primary/Secondary DataSource로 분리해서 각 도메인에 맞는 저장소를 선택했다. Spring의 `@Primary` + 별도 `EntityManagerFactory`로 JPA와 JDBC 두 경로를 공존시켰다.
+
+### 5. 하이브리드 RAG 파이프라인이 의도대로 동작했다
+
+BM25(키워드) + Semantic(벡터) 검색을 RRF(Reciprocal Rank Fusion)로 결합하고, Cross-Encoder Reranker로 재정렬하는 3단계 파이프라인이 투자 리포트 특성(숫자·종목명·섹터 혼재)에 잘 맞았다.
+
+### 6. TanStack Query v5로 서버 상태를 깔끔하게 관리했다
+
+낙관적 업데이트(`onMutate`), 쿼리 무효화(`invalidateQueries`), 자동 폴링(`refetchInterval`)을 조합해서 알림 시스템·실시간 시세·포트폴리오 데이터를 별도 전역 상태 없이 관리했다.
 
 ---
 
 ## 삽질한 것들
 
-### 1. 테스트에서 엔티티 ID가 null이었다 (NullPointerException 연쇄)
+### 1. CI 3연속 실패 — 각각 다른 원인
 
-**상황**
-`OrderServiceTest`에서 `account.getMember().getId().equals(member.getId())` 호출 시 NPE 발생.
+**Round 1 — `NoSuchBeanDefinitionException`**
 
-**원인**
-JPA가 관리하지 않는 순수 Java 객체(`Member.create(...)`)는 `@Id` 필드가 null. 실제 DB에 저장하지 않으니 당연한 일인데, 처음엔 이걸 놓쳤다.
+`SupabaseClient`가 `@Profile` 없이 빈으로 등록됐는데, 의존하는 `supabaseJdbc` DataSource가 `@Profile("!test")`였다. 의존 체인 (`SupabaseClient → SocialController → ProfileController → RankingService → RankingScheduler`)의 모든 빈에 `@Profile("!test")` 추가.
 
-**해결**
-```java
-ReflectionTestUtils.setField(member, "id", 1L);
-ReflectionTestUtils.setField(account, "id", 100L);
-ReflectionTestUtils.setField(stock, "id", 10L);
-```
+**Round 2 — `ScriptStatementFailedException`**
 
-**교훈**
-단위 테스트에서 엔티티 ID를 쓰는 로직이 있으면 ReflectionTestUtils로 반드시 주입해야 한다. Mockito `anyLong()`은 null을 매칭하지 않는다는 것도 함께 파악했다.
+H2가 기본적으로 `data.sql`을 Hibernate DDL보다 먼저 실행하려 했다. 테이블이 없는 상태에서 INSERT → 에러. `defer-datasource-initialization: true` + `sql.init.mode: never` 로 해결.
+
+**Round 3 — `WeakKeyException at Keys.java:83`**
+
+`SupabaseJwtVerifier`가 `@Profile` 없이 모든 환경에서 로드되는데, test 프로파일의 `supabase.jwt-secret` 기본값 `"placeholder"`가 Base64 디코딩 시 8바이트(64비트) — JJWT 최소 요구 256비트 미달. test 프로파일에 46바이트짜리 placeholder 추가.
+
+**교훈**: CI는 로컬과 미묘하게 다르다. `@Profile` 누락, `data.sql` 실행 순서, 환경변수 기본값 — 세 가지 모두 로컬에선 문제없던 것들이었다.
 
 ---
 
-### 2. Mockito STRICT_STUBS가 발목을 잡았다
+### 2. IDOR 취약점을 뒤늦게 발견했다
 
-**상황**
-`PotentialStubbingProblem` — stubbing 했는데 실제로 호출되지 않았다는 경고가 테스트 실패로 이어짐.
+`PriceAlertController`에서 `accountId`를 경로 파라미터로 받으면서 로그인한 유저의 계좌인지 검증하지 않았다. 타인의 `accountId`를 직접 입력하면 다른 사람의 알림을 조회·삭제할 수 있었다.
 
-**원인**
-stock ID가 null이라 `anyLong()` stub이 매칭되지 않았고, 그러면서 호출 안 된 stub으로 취급됨.
+**원인**: Phase 10 구현 시 `AccountController`의 `validateOwner()` 패턴을 참고하지 않고 독립적으로 작성했다.
 
-**해결**
-`@MockitoSettings(strictness = Strictness.LENIENT)` 추가 + stock ID 주입으로 근본 원인도 함께 해결.
+**해결**: 모든 엔드포인트에 `@AuthenticationPrincipal Member member` 주입 + 서비스 레이어에서 `account.getMember().getId().equals(member.getId())` 검증.
 
-**교훈**
-STRICT_STUBS는 좋은 습관을 강제하지만, 실패 메시지가 직접적이지 않아서 진짜 원인을 찾는 데 시간이 걸린다. 오히려 NPE 스택트레이스를 먼저 보는 게 빨랐다.
+**교훈**: 신규 도메인 컨트롤러 작성 시 기존 소유권 검증 패턴을 체크리스트로 확인해야 한다. 코드 리뷰 자동화(security-reviewer)를 커밋 전에 반드시 실행하자.
 
 ---
 
-### 3. CI에서 PostgreSQL 컨테이너가 죽었다
+### 3. `@Lazy` 없이 순환 의존성이 생겼다
 
-**상황**
-GitHub Actions에서 PostgreSQL 서비스 컨테이너가 health check 실패로 시작조차 안 됨.
+`StockPricePublisher`가 `PriceAlertService`를 주입받고, `PriceAlertService`가 `AccountRepository`를 주입받는 과정에서 스프링 컨텍스트 초기화 순환이 발생했다.
 
-**원인**
-test 프로파일은 H2 인메모리 DB를 쓰는데, CI yml에 PostgreSQL 서비스가 불필요하게 설정되어 있었다.
+**해결**: `StockPricePublisher`의 `PriceAlertService` 주입에 `@Lazy` 적용. 첫 호출 시점에 프록시를 통해 실제 빈을 주입받도록 지연.
 
-**해결**
-```yaml
-services:
-  # test 프로파일은 H2 인메모리 DB 사용 → PostgreSQL 불필요
-  redis:
-    image: redis:7-alpine
-```
-PostgreSQL 블록 전체 제거.
-
-**교훈**
-CI 환경과 로컬 환경의 차이를 항상 의식해야 한다. 로컬에서 docker-compose로 PostgreSQL 띄우고 테스트해도 CI는 별도 환경이다. test 프로파일이 어떤 DB를 쓰는지 CI 설정과 맞춰야 한다.
+**교훈**: 이벤트 발행자(Publisher)가 특정 도메인 서비스를 직접 의존하는 구조는 순환 위험이 있다. Spring Application Event나 별도 리스너 구조가 더 깔끔할 수 있다.
 
 ---
 
-### 4. `@SpringBootTest`가 환경변수를 요구했다
+### 4. PDF 추출에서 표와 텍스트 혼용이 까다로웠다
 
-**상황**
-`StockApiApplicationTests`에서 `PlaceholderResolutionException: JWT_SECRET 환경변수 없음`.
+증권사 리포트는 같은 페이지에 텍스트, 표, 차트 이미지가 섞인다. pdfplumber만 쓰면 표 외 텍스트가 누락되고, PyMuPDF만 쓰면 표 구조가 깨진다.
 
-**원인**
-application.yml에서 `jwt.secret: ${JWT_SECRET}` (필수 환경변수)로 바꾼 후, 테스트가 default 프로파일을 로드하면서 환경변수를 찾지 못함.
+**해결**: PyMuPDF로 전체 텍스트 추출 → pdfplumber로 표만 추출 → 페이지별로 병합 후 중복 제거.
 
-**해결**
-```java
-@SpringBootTest
-@ActiveProfiles("test")  // 추가
-class StockApiApplicationTests { ... }
-```
-test 프로파일에 `jwt.secret` 하드코딩값 추가.
-
-**교훈**
-보안 설정을 바꿀 때는 테스트 프로파일도 함께 챙겨야 한다. 보안 강화 → 테스트 깨짐 → 프로파일 설정 누락 패턴은 흔히 발생한다.
+**교훈**: PDF 라이브러리는 각각 강점이 다르다. 두 라이브러리를 조합하는 게 복잡하지만 결과 품질이 확연히 달랐다.
 
 ---
 
-### 5. OrderRequest 파라미터 순서 실수
+### 5. BM25와 Semantic 검색의 점수 스케일 차이
 
-**상황**
-`new OrderRequest("005930", 5L, OrderType.BUY)` — 컴파일 에러.
+RRF(Reciprocal Rank Fusion) 이전에 단순 가중 합산을 시도했다. BM25 점수(0~수십)와 Cosine 유사도(0~1)의 스케일 차이로 항상 BM25가 지배했다.
 
-**원인**
-record 정의가 `(ticker, OrderType, quantity)` 순서인데 테스트에서 `(ticker, quantity, OrderType)`으로 작성.
+**해결**: RRF — 각 검색 결과의 순위(rank)만 사용해 `1/(k + rank)` 합산. 점수 절댓값 무관하게 순위 기반으로 결합.
 
-**해결**
-테스트 전체에서 파라미터 순서 수정.
-
-**교훈**
-record는 파라미터 순서가 API 계약이다. IDE 자동완성에 의존하면 이런 실수를 방지할 수 있다. 타입이 다른 파라미터끼리 순서가 바뀌면 컴파일 에러가 나지만, 같은 타입끼리 바뀌면 런타임까지 모른다.
+**교훈**: 이종 검색 시스템 결합은 점수 정규화보다 순위 기반 융합이 훨씬 안정적이다.
 
 ---
 
@@ -150,26 +129,53 @@ record는 파라미터 순서가 API 계약이다. IDE 자동완성에 의존하
 
 | 주제 | 내용 |
 |------|------|
-| JWT 블랙리스트 | 로그아웃 시 Access Token 남은 유효시간만큼 Redis에 보관, 검증 시 블랙리스트 체크 |
-| 비관적 락 | `@Lock(PESSIMISTIC_WRITE)` + `@Transactional` 조합으로 select-for-update 구현 |
-| H2 + PostgreSQLDialect | H2 위에서 PostgreSQL 문법 호환 (`MODE=PostgreSQL`), 단 dialect warning은 감수 |
-| Mockito LENIENT | 불필요한 stubbing 경고를 억제할 때 쓰지만, 근본 원인은 따로 있을 수 있음 |
-| ReflectionTestUtils | 비공개 필드 (특히 JPA `@Id`) 주입 — 단위 테스트의 필수 도구 |
-| Vite proxy | `vite.config.ts`의 `/api` proxy로 CORS 없이 개발 가능 |
-| Zustand persist | JWT 토큰을 localStorage에 안전하게 저장, 새로고침 시에도 로그인 유지 |
+| Spring `@Profile` | Bean과 Configuration 모두 프로파일 제어 필요. 의존 체인 전체를 추적해야 함 |
+| H2 + PostgreSQL 호환 | `MODE=PostgreSQL` + `defer-datasource-initialization` + `sql.init.mode: never` 3개 세트 |
+| JJWT 0.12.x 키 요구사항 | `Keys.hmacShaKeyFor()` 최소 256비트. Base64 디코딩 후 바이트 수 기준 |
+| GBM 시뮬레이션 | `dS = μS·dt + σS·dW`, dt=1s, σ는 1년 수익률 표준편차에서 연환산 |
+| Cholesky 분해 | 상관행렬 → 하삼각행렬 분해 → 독립 노이즈에 곱해 상관 노이즈 생성 |
+| RRF Fusion | `score = Σ 1/(k + rank_i)`, k=60이 경험적 최적값 |
+| Cross-Encoder Reranker | Bi-encoder(속도) → Cross-encoder(정확도) 2단계 파이프라인 |
+| FastAPI + uvicorn | Python 비동기 API 서버. `async def` 엔드포인트로 GPT-4o 호출 대기 최소화 |
+| IDOR 방어 | 경로 파라미터 ID는 항상 인증된 사용자 소유 여부를 서비스 레이어에서 검증 |
+| Nginx SPA proxy | `try_files $uri /index.html` + location별 upstream 프록시 |
+
+---
+
+## 수치로 보는 결과물
+
+| 항목 | 수치 |
+|------|------|
+| API 엔드포인트 수 | 30+ |
+| 도메인 모듈 수 | 10 (account, alert, member, order, portfolio, profile, ranking, social, stock, KIS) |
+| 프론트엔드 페이지 수 | 6 |
+| RAG 지원 페르소나 | 3 (공격형 / 중립형 / 안정형) |
+| CI 파이프라인 | GitHub Actions (Java 17 + Gradle + H2) |
+| Docker 서비스 수 | 5 (stock-api, frontend, rag-report, postgres, redis, qdrant) |
+| 외부 API 연동 수 | 4 (KIS OpenAPI, Yahoo Finance, OpenAI GPT-4o, Supabase) |
 
 ---
 
 ## 아쉬운 점 / 다음에는
 
-- **테스트를 나중에 썼다** — TDD로 시작했으면 OrderRequest 파라미터 순서 같은 실수를 초반에 잡았을 것. 다음 프로젝트는 서비스 메서드 작성 전 테스트 먼저.
-- **CI를 처음부터 구성했으면** — 로컬에서 잘 되던 게 CI에서 터지는 경험을 줄일 수 있었다. Dockerfile + GitHub Actions는 day 1 작업.
-- **프론트 에러 처리가 얕다** — Axios 인터셉터에서 메시지 정규화는 했지만, 에러 바운더리나 토스트 알림이 없다. 실제 서비스라면 사용자 피드백이 필수.
-- **테스트 커버리지** — 8개 테스트는 시작이지만, Controller 레이어 통합 테스트(`@WebMvcTest`)와 Repository 테스트가 없다.
+**테스트 커버리지가 아직 낮다**
+`PriceAlertService`, `PortfolioService`, `HybridSearch` 단위 테스트가 없다. Controller 레이어 `@WebMvcTest`도 미작성. 다음엔 기능 구현과 테스트를 동시에.
+
+**이벤트 기반 아키텍처 도입이 필요하다**
+`StockPricePublisher`가 `PriceAlertService`를 직접 호출하면서 `@Lazy` 패치가 필요했다. Spring Application Event 또는 Kafka 토픽으로 완전히 분리했으면 의존성 문제가 없었을 것.
+
+**RAG 평가 지표를 실측해야 한다**
+RAGAS 목표값을 설정했지만 (`faithfulness ≥ 0.85`, `answer_relevancy ≥ 0.80`) 실제 리포트 데이터로 측정하지 않았다. 평가 데이터셋 구축 → runner.py 실행 → 지표 개선 루프가 필요하다.
+
+**환경변수 관리가 분산됐다**
+3개 레포에 `.env.example`이 따로 있다. 실제 배포 시 HashiCorp Vault나 AWS Secrets Manager로 중앙화하는 게 낫다.
+
+**프론트 에러 바운더리가 없다**
+API 실패 시 토스트 알림은 있지만 React Error Boundary가 없어서 컴포넌트 에러가 전체 화면 붕괴로 이어질 수 있다.
 
 ---
 
 ## 한 줄 요약
 
-> 설계는 깔끔했고, 보안과 동시성은 제대로 잡았다.
-> 테스트와 CI는 처음부터 함께 가야 한다는 걸 몸으로 배웠다.
+> 3개 레포, 10개 Phase, 30+ 엔드포인트 — 설계는 처음부터 끝까지 버텼다.
+> CI 실패 3연속, IDOR 취약점, 순환 의존성 — 실수는 반드시 기록에 남긴다.
