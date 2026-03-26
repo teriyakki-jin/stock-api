@@ -130,3 +130,29 @@ jwt:
 
 supabase:
   jwt-secret: dGVzdC1zdXBhYmFzZS1qd3Qtc2VjcmV0LWxvbmctZW5vdWdoLWZvci1oczI1Ng==  # test 전용 (46바이트 = 368비트)
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/stockdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.nh.stockapi: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
