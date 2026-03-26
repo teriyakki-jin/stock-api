@@ -24,6 +24,11 @@ spring:
         default_batch_fetch_size: 100
     open-in-view: false
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true   # 기존 DB에 처음 적용 시 baseline 생성
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -94,6 +99,9 @@ spring:
       mode: always
       encoding: UTF-8
 
+  flyway:
+    enabled: false  # 로컬은 create-drop으로 스키마 관리 (Flyway 불필요)
+
 jwt:
   secret: bG9jYWwtZGV2LW9ubHktc2VjcmV0LWtleS1kb250LXVzZS1pbi1wcm9kdWN0aW9u  # local 전용
 
@@ -119,6 +127,9 @@ spring:
   sql:
     init:
       mode: never  # 테스트는 각 테스트가 직접 데이터 세팅 (data.sql 불필요)
+
+  flyway:
+    enabled: false  # 테스트는 H2 create-drop 사용 (Flyway 불필요)
 
   data:
     redis:
